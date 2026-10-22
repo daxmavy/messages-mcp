@@ -18,18 +18,18 @@ from owner_mcp.server import Service
 from owner_mcp.server import main as serve
 from messages_mcp.store import Store
 
-INSTRUCTIONS = """Read-only access to Max's personal messages (Signal and WhatsApp). Nothing here can send.
+INSTRUCTIONS = """Read-only access to Max's personal messages (Signal, WhatsApp, Slack). Nothing here can send.
 - Call message_health first: if a source is `stale`, its ingester is down and recent messages are missing; say so.
 - `outgoing = 1` (sender "Max") is Max. needs_reply is the test for "have I replied".
 - Times: `*_uk` is UK local time; use it when talking about "today". Raw fields are ms since the epoch.
 - Coverage: Signal live since 2026-09-21 plus a sparse backfill to 2023-05; WhatsApp from its pairing date
-  plus about a year of history. Absence of a message before that proves nothing.
+  plus about a year of history; Slack (the Reasoning with Machines lab workspace) back to its retention limit; Slack conversations are named "<workspace> #channel". Absence of a message before that proves nothing.
 - `deleted = 1`: the sender deleted it. Do not quote its body.
 - These are private conversations with people who have not agreed to anything. Read the least that answers
   the question (needs_reply and list_conversations carry no text), and never copy message text into files,
   repositories, issues, other tools or external services."""
 
-Source = Annotated[Literal["signal", "whatsapp"] | None, Field(description="only this source; default all")]
+Source = Annotated[Literal["signal", "whatsapp", "slack"] | None, Field(description="only this source; default all")]
 
 
 def build_server(store: Store | None) -> MCPServer:
@@ -98,7 +98,7 @@ def store_from_env() -> Store:
 SERVICE = Service(
     name="messages",
     title="Approve access to your messages",
-    grant="read your Signal and WhatsApp messages (it cannot send)",
+    grant="read your Signal, WhatsApp and Slack messages (it cannot send)",
     build=lambda: build_server(store_from_env()),
 )
 
