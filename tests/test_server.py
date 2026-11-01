@@ -71,3 +71,9 @@ def test_tool_calls_are_audited_without_message_text(tmp_path, monkeypatch):
     rec = json.loads(log.splitlines()[-1])
     assert rec["tool"] == "search_messages" and rec["ok"] is True and rec["result"] == {"items": 1}
     assert "dinner?" not in log  # the result's text is never logged
+
+
+def test_messenger_is_a_source():
+    store = FakeStore()
+    _call(build_server(store), "list_conversations", {"source": "messenger"})
+    assert store.calls == [("conversations", {"source": "messenger", "limit": 500})]
