@@ -1,6 +1,6 @@
 # messages-mcp
 
-A read-only MCP server over Max's message store: Signal and WhatsApp, as ingested by
+A read-only MCP server over Max's message store: Signal, WhatsApp, Slack and Messenger, as ingested by
 [message-ingest](https://github.com/daxmavy/message-ingest). It cannot send anything.
 
 ```
