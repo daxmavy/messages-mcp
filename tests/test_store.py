@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import pytest
 
@@ -83,3 +85,13 @@ def test_only_outgoing_messages_are_labelled_max():
     assert impostor2["sender_id"] == "u1"
     assert unnamed["sender"] == "u2"
     assert conv == {"conversation": "Bob", "messages": 3}
+
+
+def test_request_urls_with_search_terms_are_not_logged(caplog):
+    caplog.set_level(logging.INFO)  # what owner-mcp's basicConfig sets for the service
+
+    def handler(request):
+        return httpx.Response(200, json={"rows": []})
+
+    _store(handler).query("search", q="secret-term")
+    assert "secret-term" not in caplog.text

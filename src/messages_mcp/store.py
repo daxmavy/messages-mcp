@@ -9,6 +9,7 @@ can set their own display name to "Max", so that name is never trusted on its ow
 
 from __future__ import annotations
 
+import logging
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -19,6 +20,11 @@ import httpx
 UK = ZoneInfo("Europe/London")
 TIME_FIELDS = ("sent_at", "edited_at", "last_message", "last_heartbeat")
 STALE_AFTER_MS = 5 * 60_000
+
+# httpx logs every request URL at INFO, query string included (search terms, conversation ids),
+# and the service runs at INFO, so that would land in journald.
+for _name in ("httpx", "httpcore"):
+    logging.getLogger(_name).setLevel(logging.WARNING)
 
 
 class StoreError(RuntimeError):
