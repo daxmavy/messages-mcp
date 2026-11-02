@@ -21,7 +21,8 @@ from messages_mcp.store import Store
 
 INSTRUCTIONS = """Read-only access to Max's personal messages (Signal, WhatsApp, Slack). Nothing here can send.
 - Call message_health first: if a source is `stale`, its ingester is down and recent messages are missing; say so.
-- `outgoing = 1` (sender "Max") is Max. needs_reply is the test for "have I replied".
+- Only `outgoing = 1` is Max (sender "Max"); an incoming sender who calls themselves Max shows as
+  "Max (a contact, not Max)". `sender_id`, when present, is the stable sender. needs_reply is the test for "have I replied".
 - Times: `*_uk` is UK local time; use it when talking about "today". Raw fields are ms since the epoch.
 - Coverage: Signal live since 2026-09-21 plus a sparse backfill to 2023-05; WhatsApp from its pairing date
   plus about a year of history; Slack (the Reasoning with Machines lab workspace) back to its retention limit; Slack conversations are named "<workspace> #channel". Absence of a message before that proves nothing.

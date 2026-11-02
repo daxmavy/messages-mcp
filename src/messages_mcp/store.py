@@ -3,7 +3,8 @@
 The Worker runs fixed, read-only queries; this side only picks one and its parameters.
 Times arrive as ms since the epoch; every one gets `_utc` and `_uk` siblings, because
 Max is in the UK and the agent should not have to convert. A deleted message comes back
-without its body, whatever the Worker sends.
+without its body, whatever the Worker sends. Only `outgoing = 1` is labelled "Max": a contact
+can set their own display name to "Max", so that name is never trusted on its own.
 """
 
 from __future__ import annotations
@@ -41,6 +42,20 @@ def _mask_deleted(row: dict[str, Any]) -> dict[str, Any]:
     return row | {"body": None, "deleted": True} | ({"raw_json": None} if "raw_json" in row else {})
 
 
+def _label_sender(row: dict[str, Any]) -> dict[str, Any]:
+    if "outgoing" not in row:
+        return row
+    if row["outgoing"] == 1:
+        return row | {"sender": "Max"}
+    out = dict(row)
+    if not out.get("sender") and out.get("sender_id"):
+        out["sender"] = out["sender_id"]
+    for key in ("sender", "sender_name"):
+        if isinstance(out.get(key), str) and out[key].strip().casefold() == "max":
+            out[key] = f"{out[key].strip()} (a contact, not Max)"
+    return out
+
+
 class Store:
     def __init__(self, url: str, token: str, *, transport: httpx.BaseTransport | None = None,
                  timeout: float = 30.0) -> None:
@@ -58,7 +73,7 @@ class Store:
         return response.json()
 
     def query(self, name: str, **params: Any) -> list[dict[str, Any]]:
-        return [_times(_mask_deleted(row)) for row in self._get(name, params)["rows"]]
+        return [_times(_label_sender(_mask_deleted(row))) for row in self._get(name, params)["rows"]]
 
     def health(self, now_ms: int | None = None) -> dict[str, dict[str, Any]]:
         now_ms = now_ms if now_ms is not None else int(time.time() * 1000)

@@ -64,3 +64,22 @@ def test_deleted_messages_never_carry_their_body():
     gone, kept = _store(handler).query("recent")
     assert gone["body"] is None and gone["raw_json"] is None and gone["deleted"] is True
     assert kept["body"] == "kept" and kept["deleted"] == 0
+
+
+def test_only_outgoing_messages_are_labelled_max():
+    def handler(request):
+        return httpx.Response(200, json={"rows": [
+            {"sender": "Bob", "outgoing": 1},  # old Worker: a stored name on Max's own message
+            {"sender": "Max", "outgoing": 0},  # a contact who calls themselves Max
+            {"sender": " max ", "sender_name": "max", "sender_id": "u1", "outgoing": 0},
+            {"sender": None, "sender_id": "u2", "outgoing": 0},  # new Worker: no name, stable id
+            {"conversation": "Bob", "messages": 3},  # not a message row
+        ]})
+
+    mine, impostor, impostor2, unnamed, conv = _store(handler).query("recent")
+    assert mine["sender"] == "Max"
+    assert impostor["sender"] == "Max (a contact, not Max)"
+    assert impostor2["sender"] == "max (a contact, not Max)" and impostor2["sender_name"] == "max (a contact, not Max)"
+    assert impostor2["sender_id"] == "u1"
+    assert unnamed["sender"] == "u2"
+    assert conv == {"conversation": "Bob", "messages": 3}
