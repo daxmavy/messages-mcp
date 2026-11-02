@@ -14,6 +14,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 from mcp.server.mcpserver import MCPServer
+from mcp.types import ToolAnnotations
 from owner_mcp.server import Service
 from owner_mcp.server import main as serve
 from messages_mcp.store import Store
@@ -29,6 +30,9 @@ INSTRUCTIONS = """Read-only access to Max's personal messages (Signal, WhatsApp,
   the question (needs_reply and list_conversations carry no text), and never copy message text into files,
   repositories, issues, other tools or external services."""
 
+# Every tool only reads Max's own store: no writes, and nothing reaches beyond it.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+
 Source = Annotated[Literal["signal", "whatsapp", "slack"] | None, Field(description="only this source; default all")]
 
 
@@ -40,18 +44,18 @@ def build_server(store: Store | None) -> MCPServer:
             raise RuntimeError("message store not configured")
         return store
 
-    @mcp.tool()
+    @mcp.tool(annotations=READ_ONLY)
     def message_health() -> dict:
         """Per source: last heartbeat, last message, message count, and whether the ingester looks down."""
         return s().health()
 
-    @mcp.tool()
+    @mcp.tool(annotations=READ_ONLY)
     def list_conversations(source: Source = None,
                            limit: Annotated[int, Field(ge=1, le=1000)] = 500) -> list[dict]:
         """Every chat, most recently active first, with all-time message counts. No message text."""
         return s().query("conversations", source=source, limit=limit)
 
-    @mcp.tool()
+    @mcp.tool(annotations=READ_ONLY)
     def recent_messages(
         hours: Annotated[float, Field(gt=0, le=24 * 3660, description="window ending now")] = 24,
         source: Source = None,
@@ -63,14 +67,14 @@ def build_server(store: Store | None) -> MCPServer:
         return s().query("recent", hours=hours, source=source, conversation=conversation,
                          incoming_only=incoming_only, limit=limit)
 
-    @mcp.tool()
+    @mcp.tool(annotations=READ_ONLY)
     def search_messages(text: Annotated[str, Field(min_length=1, description="substring, case-insensitive for ASCII")],
                         source: Source = None,
                         limit: Annotated[int, Field(ge=1, le=1000, description="keeps the newest N")] = 100) -> list[dict]:
         """Messages whose text contains `text`, oldest first."""
         return s().query("search", q=text, source=source, limit=limit)
 
-    @mcp.tool()
+    @mcp.tool(annotations=READ_ONLY)
     def read_conversation(
         conversation_id: Annotated[str, Field(description="from list_conversations or a message's conversation_id")],
         source: Source = None,
@@ -80,7 +84,7 @@ def build_server(store: Store | None) -> MCPServer:
         """One chat's messages, the newest `limit` before `before` (default now), oldest first."""
         return s().query("thread", conversation_id=conversation_id, source=source, before=before, limit=limit)
 
-    @mcp.tool()
+    @mcp.tool(annotations=READ_ONLY)
     def needs_reply(days: Annotated[float, Field(gt=0, le=3660, description="ignore chats quiet for longer")] = 14,
                     source: Source = None) -> list[dict]:
         """Chats whose newest message is not Max's, newest first, with how many are unanswered. No message text."""
