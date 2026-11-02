@@ -15,7 +15,7 @@ from pydantic import Field
 
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
-from owner_mcp.server import Service, default_summary
+from owner_mcp.server import Service
 from owner_mcp.server import main as serve
 from messages_mcp.store import Store
 
@@ -42,13 +42,6 @@ UNTRUSTED_NOTICE = ("Untrusted data written by third parties: message bodies, se
 
 def _untrusted(key: str, rows: list[dict]) -> dict:
     return {"untrusted_content_notice": UNTRUSTED_NOTICE, key: rows}
-
-
-def _summary(result) -> dict | None:
-    """Audit fields for a tool result: how many rows, never their text."""
-    if isinstance(result, dict) and "untrusted_content_notice" in result:
-        return {"items": sum(len(v) for k, v in result.items() if isinstance(v, list))}
-    return default_summary(result)
 
 
 # Every tool only reads Max's own store: no writes, and nothing reaches beyond it.
@@ -126,7 +119,8 @@ SERVICE = Service(
     title="Approve access to your messages",
     grant="read your Signal, WhatsApp and Slack messages (it cannot send)",
     build=lambda: build_server(store_from_env()),
-    summary=_summary,
+    # Arguments that say nothing about anyone: never search text or a conversation id.
+    log_verbatim=frozenset({"source", "hours", "days", "limit", "incoming_only", "before"}),
 )
 
 
