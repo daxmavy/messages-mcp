@@ -25,7 +25,7 @@ INSTRUCTIONS = """Read-only access to Max's personal messages (Signal, WhatsApp,
 - Times: `*_uk` is UK local time; use it when talking about "today". Raw fields are ms since the epoch.
 - Coverage: Signal live since 2026-09-21 plus a sparse backfill to 2023-05; WhatsApp from its pairing date
   plus about a year of history; Slack (the Reasoning with Machines lab workspace) back to its retention limit; Slack conversations are named "<workspace> #channel". Absence of a message before that proves nothing.
-- `deleted = 1`: the sender deleted it. Do not quote its body.
+- `deleted = true`: the sender deleted it; its body is withheld (null).
 - These are private conversations with people who have not agreed to anything. Read the least that answers
   the question (needs_reply and list_conversations carry no text), and never copy message text into files,
   repositories, issues, other tools or external services."""

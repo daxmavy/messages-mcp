@@ -2,7 +2,8 @@
 
 The Worker runs fixed, read-only queries; this side only picks one and its parameters.
 Times arrive as ms since the epoch; every one gets `_utc` and `_uk` siblings, because
-Max is in the UK and the agent should not have to convert.
+Max is in the UK and the agent should not have to convert. A deleted message comes back
+without its body, whatever the Worker sends.
 """
 
 from __future__ import annotations
@@ -34,6 +35,12 @@ def _times(row: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _mask_deleted(row: dict[str, Any]) -> dict[str, Any]:
+    if not row.get("deleted"):
+        return row
+    return row | {"body": None, "deleted": True} | ({"raw_json": None} if "raw_json" in row else {})
+
+
 class Store:
     def __init__(self, url: str, token: str, *, transport: httpx.BaseTransport | None = None,
                  timeout: float = 30.0) -> None:
@@ -51,7 +58,7 @@ class Store:
         return response.json()
 
     def query(self, name: str, **params: Any) -> list[dict[str, Any]]:
-        return [_times(row) for row in self._get(name, params)["rows"]]
+        return [_times(_mask_deleted(row)) for row in self._get(name, params)["rows"]]
 
     def health(self, now_ms: int | None = None) -> dict[str, dict[str, Any]]:
         now_ms = now_ms if now_ms is not None else int(time.time() * 1000)

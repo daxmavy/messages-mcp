@@ -52,3 +52,15 @@ def test_worker_errors_become_store_errors_without_the_token(status):
     with pytest.raises(StoreError) as e:
         _store(handler).query("recent")
     assert str(status) in str(e.value) and "read-tok" not in str(e.value)
+
+
+def test_deleted_messages_never_carry_their_body():
+    def handler(request):
+        return httpx.Response(200, json={"rows": [
+            {"body": "gone", "raw_json": "{}", "deleted": 1},
+            {"body": "kept", "deleted": 0},
+        ]})
+
+    gone, kept = _store(handler).query("recent")
+    assert gone["body"] is None and gone["raw_json"] is None and gone["deleted"] is True
+    assert kept["body"] == "kept" and kept["deleted"] == 0
