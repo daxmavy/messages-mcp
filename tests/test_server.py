@@ -71,3 +71,11 @@ def test_tool_calls_are_audited_without_message_text(tmp_path, monkeypatch):
     rec = json.loads(log.splitlines()[-1])
     assert rec["tool"] == "search_messages" and rec["ok"] is True and rec["result"] == {"items": 1}
     assert "dinner?" not in log  # the result's text is never logged
+
+
+def test_every_tool_is_marked_read_only_and_closed_world():
+    tools = asyncio.run(build_server(store=None).list_tools())
+    for t in tools:
+        assert t.annotations is not None, t.name
+        assert t.annotations.read_only_hint is True, t.name
+        assert t.annotations.open_world_hint is False, t.name
