@@ -63,14 +63,16 @@ def test_tool_calls_are_audited_without_message_text(tmp_path, monkeypatch):
 
     async def go():
         async with Client(server) as c:
-            await c.call_tool("search_messages", {"text": "dinner"})
+            await c.call_tool("search_messages", {"text": "dinner", "source": "signal"})
 
     with audit.caller("local"):
         asyncio.run(go())
     log = (tmp_path / "audit.log").read_text()
     rec = json.loads(log.splitlines()[-1])
-    assert rec["tool"] == "search_messages" and rec["ok"] is True and rec["result"] == {"items": 1}
-    assert "dinner?" not in log  # the result's text is never logged
+    assert rec["tool"] == "search_messages" and rec["ok"] is True
+    assert rec["args"] == {"text": "<6 chars>", "source": "signal"}  # the search term is never logged
+    assert rec["result"]["messages"] == "<1 items>"
+    assert "dinner" not in log  # neither the term nor the result's text
 
 
 def test_every_tool_is_marked_read_only_and_closed_world():

@@ -411,7 +411,7 @@ wheels = [
 [[package]]
 name = "owner-mcp"
 version = "0.1.0"
-source = { git = "https://github.com/daxmavy/owner-mcp?branch=main#df3ffd982ecf3a0592939f253c5bd65e23a0f72c" }
+source = { git = "https://github.com/daxmavy/owner-mcp?branch=main#afe53a92ee5bebd1f1bff084eea30f93745be471" }
 dependencies = [
     { name = "mcp" },
     { name = "uvicorn" },
